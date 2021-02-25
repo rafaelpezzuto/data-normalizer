@@ -1,7 +1,10 @@
+import logging
+
 from model.declarative import Base, Document
 from pymongo import MongoClient
 from pymongo.uri_parser import parse_uri
 from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
@@ -34,19 +37,33 @@ def export_journal(database_uri, journal_attrs):
     pass
 
 
-def export_document(database_uri, document_attrs):
-    doc = Document()
-    doc.collection = document_attrs['collection']
-    doc.pid = document_attrs['pid']
-    doc.title = document_attrs['original_title']
-    doc.first_author = document_attrs['first_author']
-
-    doc.cl_title = document_attrs['cl_title']
-    doc.cl_first_author = document_attrs['cl_first_author']
-
+def export_documents(database_uri, documents_attrs):
     session = get_session(database_uri)
-    session.add(doc)
-    session.commit()
+
+    for dattrs in documents_attrs:
+        doc = Document()
+        doc.collection_acronym = dattrs['collection_acronym']
+        doc.publisher_id = dattrs['publisher_id']
+        doc.original_title = dattrs['original_title']
+        doc.first_author = dattrs['first_author']
+        doc.document_publication_date = dattrs['document_publication_date']
+        doc.issue_publication_date = dattrs['issue_publication_date']
+
+        doc.cl_title = dattrs['cl_title']
+        doc.cl_first_author = dattrs['cl_first_author']
+        doc.cl_document_publication_date = dattrs['cl_document_publication_date']
+        doc.cl_issue_publication_date = dattrs['cl_issue_publication_date']
+        doc.cl_publication_year = dattrs['cl_publication_year']
+
+        try:
+            session.add(doc)
+            session.commit()
+        except IntegrityError as ie:
+            logging.error(ie)
+            session.rollback()
+        except UnicodeEncodeError as uee:
+            logging.error(uee)
+            session.rollback()
 
 
 def export_citation(database_uri, citation_attrs):
