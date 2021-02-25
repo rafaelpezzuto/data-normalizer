@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Column, ForeignKey, UniqueConstraint, Index, Date
 from sqlalchemy.dialects.mysql import INTEGER, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -24,17 +24,22 @@ class Journal(Base):
 
 class Document(Base):
     __tablename__ = 'document'
-    __table_args__ = (UniqueConstraint('collection', 'pid', name='uni_document_col_pid'),)
-    __table_args__ += (Index('idx_col_pid_jou', 'collection', 'pid', 'fk_document_journal'),)
+    __table_args__ = (UniqueConstraint('collection_acronym', 'publisher_id', name='uni_document_col_pid'),)
+    __table_args__ += (Index('idx_col_pid_jou', 'collection_acronym', 'publisher_id', 'fk_document_journal'),)
 
     id = Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
-    collection = Column(VARCHAR(3), nullable=False)
-    pid = Column(VARCHAR(23), nullable=False)
-    title = Column(VARCHAR(255))
+    collection_acronym = Column(VARCHAR(3), nullable=False)
+    publisher_id = Column(VARCHAR(23), nullable=False)
+    original_title = Column(VARCHAR(1024))
     first_author = Column(VARCHAR(255))
+    document_publication_date = Column(VARCHAR(10))
+    issue_publication_date = Column(VARCHAR(10))
 
-    cl_title = Column(VARCHAR(255))
+    cl_title = Column(VARCHAR(1024))
     cl_first_author = Column(VARCHAR(255))
+    cl_document_publication_date = Column(VARCHAR(10))
+    cl_issue_publication_date = Column(VARCHAR(10))
+    cl_publication_year = Column(VARCHAR(4))
 
     # Todo: include other params
 
@@ -44,13 +49,13 @@ class Document(Base):
 
 class Citation(Base):
     __tablename__ = 'citation'
-    __table_args__ = (UniqueConstraint('collection', 'pid', 'number', name='uni_citation_col_pid_number'),)
-    __table_args__ += (Index('idx_col_pid_number', 'collection', 'pid', 'number'),)
+    __table_args__ = (UniqueConstraint('collection_acronym', 'publisher_id', 'index_number', name='uni_citation_col_pid_number'),)
+    __table_args__ += (Index('idx_col_pid_number', 'collection_acronym', 'publisher_id', 'index_number'),)
 
     id = Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
-    collection = Column(VARCHAR(3), nullable=False)
-    pid = Column(VARCHAR(23), nullable=False)
-    number = Column(INTEGER(unsigned=True), nullable=False)
+    collection_acronym = Column(VARCHAR(3), nullable=False)
+    publisher_id = Column(VARCHAR(23), nullable=False)
+    index_number = Column(INTEGER(unsigned=True), nullable=False)
 
     # Todo: include other params
 
