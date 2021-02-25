@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from model.cited_journal_normalizer import CitedJournalNormalizer
 from model.normalizer import Normalizer
 from adapter.article_meta import to_doc_attrs, to_citref_attrs
-from lib.database import mongo_collection, export_document
+from lib.database import mongo_collection, export_documents
 from xylose.scielodocument import Article
 
 
@@ -17,6 +17,7 @@ LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'INFO')
 CITED_JOURNAL_DATA = os.environ.get('CITED_JOURNAL_DATA', '/opt/data/bc-v1.bin')
 MONGO_URI_ARTICLE_META = os.environ.get('MONGO_URI_ARTICLE_META', 'mongodb://127.0.0.1:27017/articlemeta.articles')
 NORMALIZED_DATABASE_URI = os.environ.get('NORMALIZED_DATABASE_URI', 'mysql://127.0.0.1:3306/normalized')
+NORMALIZED_DATABASE_PERSIST_BULK_SIZE = int(os.environ.get('NORMALIZED_DATABASE_PERSIST_BULK_SIZE', '100'))
 
 
 def main():
@@ -95,6 +96,10 @@ def main():
                                  {'processing_date': {'$gte': datetime.strptime(params.from_date, '%Y-%m-%d')}},
                                  {'processing_date': {'$lte': datetime.strptime(params.until_date, '%Y-%m-%d')}}]}
 
+    logging.info('Normalizando dados de coleção %s de %s a %s ' % (params.collection,
+                                                                   params.from_date,
+                                                                   params.until_date))
+
     documents = []
     cited_references = []
 
@@ -111,13 +116,13 @@ def main():
                 cr_attrs = to_citref_attrs(cr)
                 cited_references.append(normalizer.cited_reference(cr_attrs))
 
-        if len(documents) > 25:
-            for d in documents:
-                export_document(params.norm_db_uri, d)
+        if len(documents) > NORMALIZED_DATABASE_PERSIST_BULK_SIZE:
+            logging.info('Salvando documentos')
+            export_documents(params.norm_db_uri, documents)
             documents = []
 
-    for d in documents:
-        export_document(params.norm_db_uri, d)
+    export_documents(params.norm_db_uri, documents)
+    logging.info('Salvando documentos')
 
 
 if __name__ == '__main__':
