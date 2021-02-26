@@ -42,18 +42,21 @@ def export_documents(database_uri, documents_attrs):
 
     for dattrs in documents_attrs:
         doc = Document()
-        doc.collection_acronym = dattrs['collection_acronym']
-        doc.publisher_id = dattrs['publisher_id']
-        doc.original_title = dattrs['original_title']
-        doc.first_author = dattrs['first_author']
-        doc.document_publication_date = dattrs['document_publication_date']
-        doc.issue_publication_date = dattrs['issue_publication_date']
 
-        doc.cl_title = dattrs['cl_title']
-        doc.cl_first_author = dattrs['cl_first_author']
-        doc.cl_document_publication_date = dattrs['cl_document_publication_date']
-        doc.cl_issue_publication_date = dattrs['cl_issue_publication_date']
-        doc.cl_publication_year = dattrs['cl_publication_year']
+        for a in dattrs:
+            doc.__setattr__(a, dattrs[a])
+        # doc.collection_acronym = dattrs['collection_acronym']
+        # doc.publisher_id = dattrs['publisher_id']
+        # doc.original_title = dattrs['original_title']
+        # doc.first_author = dattrs['first_author']
+        # doc.document_publication_date = dattrs['document_publication_date']
+        # doc.issue_publication_date = dattrs['issue_publication_date']
+        #
+        # doc.cl_title = dattrs['cl_title']
+        # doc.cl_first_author = dattrs['cl_first_author']
+        # doc.cl_document_publication_date = dattrs['cl_document_publication_date']
+        # doc.cl_issue_publication_date = dattrs['cl_issue_publication_date']
+        # doc.cl_publication_year = dattrs['cl_publication_year']
 
         try:
             session.add(doc)

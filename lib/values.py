@@ -1,10 +1,5 @@
 ARTICLEMETA_DOCUMENT_CLEANED_FIELDS = {
-    'end_page',
-    'first_author',
-    'original_title',
-    'publication_date',
-    'translated_title',
-    'start_page'
+    'original_title'
 }
 
 ARTICLEMETA_DOCUMENT_METHOD_FIELDS = {
