@@ -1,71 +1,63 @@
-from sqlalchemy import Column, ForeignKey, UniqueConstraint, Index, TEXT
-from sqlalchemy.dialects.mysql import INTEGER, VARCHAR
+from sqlalchemy import Column, ForeignKey, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSON, INTEGER, VARCHAR, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
 
-from lib.values import (
-    ARTICLEMETA_DOCUMENT_STR_FIELDS,
-    ARTICLEMETA_DOCUMENT_CLEANED_FIELDS,
-    ARTICLEMETA_DOCUMENT_METHOD_FIELDS
-)
 
 Base = declarative_base()
 
 
-class Journal(Base):
-    __tablename__ = 'journal'
-    __table_args__ = (UniqueConstraint('print_issn', 'electronic_issn', name='uni_journal_issn'),)
-    __table_args__ += (Index('idx_print_issn', 'print_issn'),)
-    __table_args__ += (Index('idx_electronic_issn', 'electronic_issn'),)
+class RawDocument(Base):
+    __tablename__ = 'raw_document'
+    __table_args__ = (UniqueConstraint('gathering_source', 'collection', 'pid'), )
 
-    id = Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
 
+    gathering_source = Column(VARCHAR(255), nullable=False)
+    gathering_date = Column(TIMESTAMP, nullable=False)
+    collection = Column(VARCHAR(255), nullable=False)
+    pid = Column(VARCHAR(255), nullable=False)
+    data = Column(JSON)
+
+
+class NormJournal(Base):
+    __tablename__ = 'norm_journal'
+
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+
+    title = Column(VARCHAR(2048))
+    abbreviated_title = Column(VARCHAR(512))
     print_issn = Column(VARCHAR(9))
     electronic_issn = Column(VARCHAR(9))
-    acronym = Column(VARCHAR(10))
-    title = Column(VARCHAR(255))
-    abbreviated_title = Column(VARCHAR(255))
-    publisher_name = Column(VARCHAR(255))
 
 
-class Document(Base):
-    __tablename__ = 'document'
-    __table_args__ = (UniqueConstraint('collection_acronym', 'publisher_id', name='uni_document_col_pid'),)
-    __table_args__ += (Index('idx_col_pid_jou', 'collection_acronym', 'publisher_id', 'fk_document_journal'),)
+class NormDocument(Base):
+    __tablename__ = 'norm_document'
 
-    id = Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
 
-    for k, n in ARTICLEMETA_DOCUMENT_STR_FIELDS.items():
-        exec('%s = Column(VARCHAR(%d))' % (k, n))
+    publication_type = Column(VARCHAR(32))
+    title = Column(VARCHAR(2048))
+    year = Column(INTEGER)
+    authors = Column(VARCHAR(2048))
+    volume = Column(VARCHAR(64))
+    start_page = Column(VARCHAR(64))
 
-        if k in ARTICLEMETA_DOCUMENT_CLEANED_FIELDS:
-            exec('cl_%s = Column(VARCHAR(%d))' % (k, n))
-
-    for k, n in ARTICLEMETA_DOCUMENT_METHOD_FIELDS.items():
-        exec('%s = Column(VARCHAR(%d))' % (k, n))
-
-        if k in ARTICLEMETA_DOCUMENT_CLEANED_FIELDS:
-            exec('cl_%s = Column(VARCHAR(%d))' % (k, n))
-
-    original_abstracts = Column(TEXT)
-    translated_abstracts = Column(TEXT)
-
-    fk_document_journal = Column(INTEGER(unsigned=True), ForeignKey('journal.id', name='fk_document_journal'))
-    journal = relationship(Journal)
+    fk_journal = Column(INTEGER, ForeignKey('norm_journal.id', name='norm_document_fk_journal_id'))
+    fk_raw_document = Column(INTEGER, ForeignKey('raw_document.id', name='norm_document_fk_raw_document_id'))
 
 
-class Citation(Base):
-    __tablename__ = 'citation'
-    __table_args__ = (
-    UniqueConstraint('collection_acronym', 'publisher_id', 'index_number', name='uni_citation_col_pid_number'),)
-    __table_args__ += (Index('idx_col_pid_number', 'collection_acronym', 'publisher_id', 'index_number'),)
+class NormCitation(Base):
+    __tablename__ = 'norm_citation'
+    __table_args__ = (UniqueConstraint('fk_raw_document', 'number'),)
 
-    id = Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
-    collection_acronym = Column(VARCHAR(3), nullable=False)
-    publisher_id = Column(VARCHAR(23), nullable=False)
-    index_number = Column(INTEGER(unsigned=True), nullable=False)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
 
-    # Todo: include other params
+    number = Column(INTEGER, nullable=False)
+    publication_type = Column(VARCHAR(32))
+    title = Column(VARCHAR(2048))
+    year = Column(INTEGER)
+    first_author = Column(VARCHAR(512))
+    start_page = Column(VARCHAR(64))
+    volume = Column(VARCHAR(64))
 
-    fk_citation_document = Column(INTEGER(unsigned=True), ForeignKey('document.id', name='fk_citation_document'))
-    document = relationship(Document)
+    fk_raw_document = Column(INTEGER, ForeignKey('raw_document.id', name='norm_citation_fk_raw_document_id'))
