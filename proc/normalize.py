@@ -7,9 +7,8 @@ sys.path.append(os.getcwd())
 from datetime import datetime, timedelta
 from model.cited_journal_normalizer import CitedJournalNormalizer
 from model.normalizer import Normalizer
-from adapter.article_meta import to_doc_attrs, to_citref_attrs
-from lib.database import mongo_collection, export_documents
-from xylose.scielodocument import Article
+from adapter.article_meta import doc_raw_attrs
+from lib.database import mongo_collection, export_data
 
 
 COLLECTION = os.environ.get('COLLECTION', 'bol')
@@ -100,29 +99,22 @@ def main():
                                                                    params.from_date,
                                                                    params.until_date))
 
-    documents = []
-    cited_references = []
+    data = []
 
-    for j in article_meta.find(documents_filter, no_cursor_timeout=True):
-        doc = Article(j)
+    for doc in article_meta.find(documents_filter, no_cursor_timeout=True):
+        logging.debug('Obtendo dados de %s...' % doc['code'])
+        doc_attrs = doc_raw_attrs(doc)
+        doc_attrs['norm_doc'] = normalizer.document(doc_attrs['data'])
+        doc_attrs['norm_cits'] = normalizer.citations(doc_attrs['data'])
+        data.append(doc_attrs)
 
-        logging.debug('Normalizando %s' % doc.publisher_id)
+        if len(data) >= NORMALIZED_DATABASE_PERSIST_BULK_SIZE:
+            logging.info('Salvando raw data...')
+            export_data(params.norm_db_uri, data)
+            data = []
 
-        doc_attrs = to_doc_attrs(doc)
-        documents.append(normalizer.document(doc_attrs))
-
-        if doc.citations:
-            for cr in doc.citations:
-                cr_attrs = to_citref_attrs(cr)
-                cited_references.append(normalizer.cited_reference(cr_attrs))
-
-        if len(documents) > NORMALIZED_DATABASE_PERSIST_BULK_SIZE:
-            logging.info('Salvando documentos')
-            export_documents(params.norm_db_uri, documents)
-            documents = []
-
-    export_documents(params.norm_db_uri, documents)
-    logging.info('Salvando documentos')
+    logging.info('Salvando raw data...')
+    export_data(params.norm_db_uri, data)
 
 
 if __name__ == '__main__':

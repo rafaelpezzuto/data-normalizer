@@ -1,10 +1,11 @@
 import logging
 
-from model.declarative import Base, Document
+from bson import json_util
+from model.declarative import Base, RawDocument, NormDocument, NormCitation
 from pymongo import MongoClient
 from pymongo.uri_parser import parse_uri
 from sqlalchemy import create_engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, DataError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
@@ -37,37 +38,41 @@ def export_journal(database_uri, journal_attrs):
     pass
 
 
-def export_documents(database_uri, documents_attrs):
+def export_data(database_uri, docs):
     session = get_session(database_uri)
 
-    for dattrs in documents_attrs:
-        doc = Document()
+    for doc_attrs in docs:
+        raw_d = RawDocument()
 
-        for a in dattrs:
-            doc.__setattr__(a, dattrs[a])
-        # doc.collection_acronym = dattrs['collection_acronym']
-        # doc.publisher_id = dattrs['publisher_id']
-        # doc.original_title = dattrs['original_title']
-        # doc.first_author = dattrs['first_author']
-        # doc.document_publication_date = dattrs['document_publication_date']
-        # doc.issue_publication_date = dattrs['issue_publication_date']
-        #
-        # doc.cl_title = dattrs['cl_title']
-        # doc.cl_first_author = dattrs['cl_first_author']
-        # doc.cl_document_publication_date = dattrs['cl_document_publication_date']
-        # doc.cl_issue_publication_date = dattrs['cl_issue_publication_date']
-        # doc.cl_publication_year = dattrs['cl_publication_year']
+        for a in ['gathering_source',
+                  'gathering_date',
+                  'collection',
+                  'pid']:
+            raw_d.__setattr__(a, doc_attrs[a])
+        raw_d.data = json_util.dumps(doc_attrs['data'])
+
+        norm_d = NormDocument()
+        for k, v in doc_attrs['norm_doc'].items():
+            norm_d.__setattr__(k, v)
+
+        citations = []
+        for cit in doc_attrs['norm_cits']:
+            norm_c = NormCitation()
+            for k, v in cit.items():
+                norm_c.__setattr__(k, v)
+            citations.append(norm_c)
 
         try:
-            session.add(doc)
+            session.add(raw_d)
+            session.add(norm_d)
+            session.add_all(citations)
             session.commit()
         except IntegrityError as ie:
             logging.error(ie)
             session.rollback()
+        except DataError as de:
+            logging.error(de)
+            session.rollback()
         except UnicodeEncodeError as uee:
             logging.error(uee)
             session.rollback()
-
-
-def export_citation(database_uri, citation_attrs):
-    pass
