@@ -1,34 +1,17 @@
-import logging
+import datetime
 
-from xylose.scielodocument import Citation, Article
-
-from lib.values import (
-    ARTICLEMETA_DOCUMENT_STR_FIELDS,
-    ARTICLEMETA_DOCUMENT_METHOD_FIELDS
-)
+from lib.values import RAW_ARTICLE_META_ATTRS, RAW_ARTICLE_META_CODE
 
 
-def _replace_none(data):
-    return str(data) if data else ''
+def doc_raw_attrs(doc):
+    attrs = {'gathering_source': RAW_ARTICLE_META_CODE,
+             'gathering_date': datetime.datetime.utcnow(),
+             'collection': doc['collection'],
+             'pid': doc['code']}
 
-
-def to_doc_attrs(doc: Article):
-    attrs = {}
-
-    for p in ARTICLEMETA_DOCUMENT_STR_FIELDS:
-        try:
-            attrs[p] = _replace_none(doc.__getattribute__(p))
-        except:
-            logging.error('Problema para obter %s' % p)
-
-    for f in ARTICLEMETA_DOCUMENT_METHOD_FIELDS:
-        try:
-            attrs[f] = _replace_none(doc.__getattribute__(f)())
-        except:
-            logging.error('Problema para obter %s()' % f)
+    data = {}
+    for k in RAW_ARTICLE_META_ATTRS:
+        data[k] = doc.get(k, '')
+    attrs.update({'data': data})
 
     return attrs
-
-
-def to_citref_attrs(cited_reference: Citation):
-    pass
