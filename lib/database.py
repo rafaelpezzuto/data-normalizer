@@ -6,7 +6,6 @@ from pymongo import MongoClient
 from pymongo.uri_parser import parse_uri
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError, DataError
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
 
@@ -27,20 +26,11 @@ def create_tables(database_uri):
     Base.metadata.create_all(engine)
 
 
-def get_session(database_uri):
-    engine = create_engine(database_uri)
-    Base.metadata.bind = engine
-    db_session = sessionmaker(bind=engine)
-    return db_session()
-
-
 def export_journal(database_uri, journal_attrs):
     pass
 
 
-def export_data(database_uri, docs):
-    session = get_session(database_uri)
-
+def export_data(session, docs):
     for doc_attrs in docs:
         raw_d = RawDocument()
 

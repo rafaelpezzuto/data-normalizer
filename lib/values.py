@@ -1,5 +1,6 @@
 RAW_ARTICLE_META_CODE = 'am'
 RAW_ISIS_CODE = 'isis'
+RAW_OAI_PMH = 'oai'
 
 RAW_ARTICLE_META_ATTRS = [
     # '_id',
@@ -25,6 +26,26 @@ RAW_ARTICLE_META_ATTRS = [
     # 'validated_wos',
     # 'validated_scielo',
     # 'version'
+]
+
+RAW_OAI_PHM_HEADER_ATTRS = [
+    'identifier',  # str
+    # 'datestamp',  # str
+    # 'setSpecs',  # list
+]
+
+RAW_OAI_PMH_METADATA_ATTRS = [
+    'title',  # list
+    'creator',  # list
+    'subject'  # list
+    'description',  # list
+    'publisher',  # list
+    'date',  # list
+    'type',  # list
+    'format',  # list
+    'identifier',  # list
+    'language',  # list
+    'rights'  # list
 ]
 
 NORM_DOCUMENT_ATTRS = {

@@ -4,19 +4,25 @@ import os
 import sys
 sys.path.append(os.getcwd())
 
+from adapter.article_meta import doc_raw_attrs
 from datetime import datetime, timedelta
+from lib.database import mongo_collection, export_data
 from model.cited_journal_normalizer import CitedJournalNormalizer
 from model.normalizer import Normalizer
-from adapter.article_meta import doc_raw_attrs
-from lib.database import mongo_collection, export_data
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 COLLECTION = os.environ.get('COLLECTION', 'bol')
 LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'INFO')
 CITED_JOURNAL_DATA = os.environ.get('CITED_JOURNAL_DATA', '/opt/data/bc-v1.bin')
 MONGO_URI_ARTICLE_META = os.environ.get('MONGO_URI_ARTICLE_META', 'mongodb://127.0.0.1:27017/articlemeta.articles')
-NORMALIZED_DATABASE_URI = os.environ.get('NORMALIZED_DATABASE_URI', 'mysql://127.0.0.1:3306/normalized')
+NORMALIZED_DATABASE_URI = os.environ.get('NORMALIZED_DATABASE_URI', 'postgresql://127.0.0.1:5432/normalized')
 NORMALIZED_DATABASE_PERSIST_BULK_SIZE = int(os.environ.get('NORMALIZED_DATABASE_PERSIST_BULK_SIZE', '100'))
+
+
+ENGINE = create_engine(NORMALIZED_DATABASE_URI)
+SESSION_FACTOTY = sessionmaker(bind=ENGINE)
 
 
 def main():
@@ -65,13 +71,6 @@ def main():
     )
 
     parser.add_argument(
-        '-s',
-        '--norm_db_uri',
-        default=NORMALIZED_DATABASE_URI,
-        help='Database normalized data string connection (mysql://user:pass@127.0.0.1:3306/database)'
-    )
-
-    parser.add_argument(
         '--logging_level',
         default=LOGGING_LEVEL
     )
@@ -110,11 +109,11 @@ def main():
 
         if len(data) >= NORMALIZED_DATABASE_PERSIST_BULK_SIZE:
             logging.info('Salvando raw data...')
-            export_data(params.norm_db_uri, data)
+            export_data(SESSION_FACTOTY(), data)
             data = []
 
     logging.info('Salvando raw data...')
-    export_data(params.norm_db_uri, data)
+    export_data(SESSION_FACTOTY(), data)
 
 
 if __name__ == '__main__':

@@ -38,7 +38,7 @@ class NormDocument(Base):
     publication_type = Column(VARCHAR(32))
     title = Column(VARCHAR(2048))
     year = Column(INTEGER)
-    authors = Column(VARCHAR(2048))
+    authors = Column(JSON)
     volume = Column(VARCHAR(64))
     start_page = Column(VARCHAR(64))
 
@@ -59,5 +59,38 @@ class NormCitation(Base):
     first_author = Column(VARCHAR(512))
     start_page = Column(VARCHAR(64))
     volume = Column(VARCHAR(64))
+    authors = Column(JSON)
+    network = Column(VARCHAR(32))
 
     fk_raw_document = Column(INTEGER, ForeignKey('raw_document.id', name='norm_citation_fk_raw_document_id'))
+
+
+class GoldDocument(Base):
+    __tablename__ = 'gold_document'
+
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+
+    network = Column(VARCHAR(32))
+
+    cited_authors = Column(JSON)
+    cited_journals = Column(JSON)
+
+
+class GoldCitation(Base):
+    __tablename__ = 'gold_citation'
+
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+
+    number = Column(INTEGER, nullable=False)
+    publication_type = Column(VARCHAR(32))
+    title = Column(VARCHAR(2048))
+    year = Column(INTEGER)
+    first_author = Column(VARCHAR(512))
+    start_page = Column(VARCHAR(64))
+    volume = Column(VARCHAR(64))
+
+    network = Column(VARCHAR(32))
+
+    citing_documents = Column(JSON)
+    citing_authors = Column(JSON)
+    citing_journals = Column(JSON)
